@@ -332,6 +332,7 @@ void SymbolDlg::slotHintProgress(int nProgress, int nTotal)
 void SymbolDlg::slotHintFinished(uint /* ignored */)
 {
 	m_pProgress->finished();
+	m_pHintList->sortItems();
 }
 
 /**
