@@ -68,6 +68,13 @@ SymbolDlg::SymbolDlg(QWidget* pParent, const char* szName) :
 	connect(m_pOKButton, SIGNAL(clicked()), this, SLOT(accept()));
 	connect(m_pCancelButton, SIGNAL(clicked()), this, SLOT(reject()));
 
+	// Clear the current symbol history
+	m_pClearSymbolHistory->setEnabled(! s_slHistory.isEmpty());
+	connect(m_pClearSymbolHistory, SIGNAL(pressed()), this, SLOT(slotClearHistory()));
+
+	// Enable "Clear" button when a symbol is entered
+	connect(m_pSymbolHC, SIGNAL(returnPressed()), this, SLOT(slotNewSymbol()));
+
 	// Run a symbol completion query when the "Hint" button is clicked
 	connect(m_pHintButton, SIGNAL(clicked()), this, SLOT(slotHintClicked()));
 
@@ -137,6 +144,16 @@ void SymbolDlg::setSymbol(const QString& sSymbol)
 }
 
 /**
+ * Restore a previously saved symbol history for a given project
+ */
+void SymbolDlg::setSlHistory(const QString& sHistory)
+{
+	if (! sHistory.isEmpty()) {
+		s_slHistory = sHistory.split(":", QString::SkipEmptyParts);
+	}
+}
+
+/**
  * @param	slSymHistory	A list of previously queried symbols
  */
 void SymbolDlg::setHistory(QStringList& slSymHistory)
@@ -195,6 +212,7 @@ QString SymbolDlg::promptSymbol(QWidget* pParent, uint& nType, const QString& sS
 	nType = dlg.getType();
 	dlg.m_pSymbolHC->addToHistory(dlg.getSymbol());
 	s_slHistory = dlg.m_pSymbolHC->historyItems();
+	s_slHistory.sort();
 	return dlg.getSymbol();
 }
 
@@ -212,6 +230,22 @@ uint SymbolDlg::getQueryType(uint nType)
 		return nType;
 
 	return nType + 1;
+}
+
+/**
+ * Clear the symbol history
+ */
+void SymbolDlg::slotClearHistory()
+{
+	m_pSymbolHC->clearHistory();
+	s_slHistory.clear();
+	m_pClearSymbolHistory->setEnabled(false);
+}
+
+void SymbolDlg::slotNewSymbol()
+{
+	if (! m_pClearSymbolHistory->isEnabled())
+		m_pClearSymbolHistory->setEnabled(true);
 }
 
 /**

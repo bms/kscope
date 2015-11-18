@@ -61,6 +61,8 @@ public:
 	static QString promptSymbol(QWidget*, uint&, const QString&);
 	static uint getQueryType(uint);
 	static void resetHistory() { s_slHistory.clear(); }
+	static const QStringList& getSlHistory() { return s_slHistory; }
+	static void setSlHistory(const QString& sHistory);
 
 private:
 	/** A cscope process used for symbol completion. */
@@ -77,6 +79,8 @@ private:
 	static QStringList s_slHistory;
 
 private slots:
+	void slotClearHistory();
+	void slotNewSymbol();
 	void slotHintClicked();
 	void slotHintDataReady(FrontendToken*);
 	void slotHintItemSelected(QListWidgetItem*);

@@ -38,6 +38,7 @@
 #include "project.h"
 #include "kscopeconfig.h"
 #include "cscopefrontend.h"
+#include "symboldlg.h"
 
 #define PROJECT_CONFIG_VER 2
 
@@ -227,6 +228,9 @@ void Project::loadSession(Session& sess)
 	// Get the path of the last viewed file
 	sess.sLastFile = pConfGrp.readEntry("LastOpenFile", QString());
 
+	// Restore the most recent symbol history of this project
+	SymbolDlg::setSlHistory(pConfGrp.readEntry("SymbolHistory", QString()));
+
 	// Read the lists of locked query files and call-tree/graph files
 	sess.slQueryFiles = pConfGrp.readEntry("QueryFiles", QStringList());
 	sess.slCallTreeFiles = pConfGrp.readEntry("CallTreeFiles", QStringList());
@@ -261,6 +265,9 @@ void Project::storeSession(const Session& sess)
 
 	// Write the path of the last viewed file
 	pConfGrp.writeEntry("LastOpenFile", sess.sLastFile);
+
+	// Write the list of most recent symbol history
+	pConfGrp.writeEntry("SymbolHistory", SymbolDlg::getSlHistory().join(":"));
 
 	// Write the lists of locked query files and call-tree/graph files
 	pConfGrp.writeEntry("QueryFiles", sess.slQueryFiles);

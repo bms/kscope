@@ -163,6 +163,23 @@
       <item>
         <layout class="QHBoxLayout">
           <item>
+            <widget class="QPushButton" name="m_pHintButton">
+              <property name="text">
+                <string>Hi&amp;nt</string>
+              </property>
+            </widget>
+          </item>
+          <item>
+            <widget class="QPushButton" name="m_pClearSymbolHistory">
+              <property name="text">
+                <string>Clear</string>
+              </property>
+              <property name="toolTip">
+                <string>Clear the symbol history. Disabled if current history is empty</string>
+              </property>
+            </widget>
+          </item>
+          <item>
             <spacer name="spacer2">
               <property name="sizeHint">
                 <size>
@@ -182,13 +199,6 @@
             <widget class="QPushButton" name="m_pOKButton">
               <property name="text">
                 <string>OK</string>
-              </property>
-            </widget>
-          </item>
-          <item>
-            <widget class="QPushButton" name="m_pHintButton">
-              <property name="text">
-                <string>Hi&amp;nt</string>
               </property>
             </widget>
           </item>

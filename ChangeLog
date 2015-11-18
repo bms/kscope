@@ -1,3 +1,9 @@
+1.8.1 (Nov 18 2015)
+* Do not rebuild cscope database if no file was changed
+* Sort hint list used during symbol query
+* In "Project" mode save / restore the history of symbols query in the project
+	config file
+
 1.8.0 (May 26 2015)
 * Port code of graph part to pure Qt4
 * Remove use of Qt3Support
