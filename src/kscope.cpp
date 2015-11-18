@@ -25,9 +25,10 @@
  *
  ***************************************************************************/
 
+#include <QtCore/QDebug>
 #include <QtCore/qnamespace.h>
 #include <QtGui/QDockWidget>
-#include <qfile.h>
+#include <QFile>
 #include <QPixmap>
 #include <QDropEvent>
 #include <QMenu>
@@ -562,6 +563,21 @@ void KScope::slotRebuildDB()
 		m_pProgressDlg->setValue(0);
 	}
 
+	// If `m_bRebuildDB' is true startup is about to finish: check if the database
+	// must be rebuilt (i.e. if any source file was modified since the last session)
+	// If not, we are here because the toolbar action was triggered: force rebuild
+	
+	QString reason;
+
+	if (m_bRebuildDB) {
+		if (! dbShouldBeRebuilt(pProj)) {
+			return;
+		}
+		reason = "One or more files were modified. Updating the database";
+	} else {
+		reason = "Force database rebuild";
+	}
+
 	// Create permanent default dialog if required & sedt default directories
 	if (!m_pSetEnvDialog)
 		m_pSetEnvDialog = new SetEnvDialog();
@@ -569,20 +585,21 @@ void KScope::slotRebuildDB()
 	QString includeSetting = pProj->getIncludeDirs();
 	QString sourceSetting = pProj->getSourceDirs();
 
+	m_pSetEnvDialog->setReason(reason);
 	m_pSetEnvDialog->setDefaultInclude(pProj->getIncludeDirs());
 	m_pSetEnvDialog->setDefaultSource(pProj->getSourceDirs());
 	m_pSetEnvDialog->exec();
 
-	if (m_pSetEnvDialog->result() == QDialog::Accepted) {
-		includeSetting = m_pSetEnvDialog->getIncludeSetting();
-		sourceSetting = m_pSetEnvDialog->getSourceSetting();
-		pProj->setIncludeDirs(includeSetting);
-		pProj->setSourceDirs(sourceSetting);
-		m_pSetEnvDialog->hide();
-	} else {
+	if (m_pSetEnvDialog->result() == QDialog::Rejected) {
 		KMessageBox::information(NULL, "<p style='white-space:pre'><qt><b>Rebuild canceled</b><br/>Cscope database will not be modified</qt>");
 		return;
 	}
+
+	includeSetting = m_pSetEnvDialog->getIncludeSetting();
+	sourceSetting = m_pSetEnvDialog->getSourceSetting();
+	pProj->setIncludeDirs(includeSetting);
+	pProj->setSourceDirs(sourceSetting);
+	m_pSetEnvDialog->hide();
 
 	m_pCscopeBuild->rebuild(includeSetting, sourceSetting);
 }
@@ -760,10 +777,12 @@ void KScope::openProject(const QString& sDir)
 	if (isAutoRebuildEnabled()) {
 		// If Cscope installation was not yet verified, postpone the build
 		// process
-		if (m_bCscopeVerified)
+		if (m_bCscopeVerified) {
 			slotRebuildDB();
-		else
+			m_bRebuildDB = false;
+		} else {
 			m_bRebuildDB = true;
+		}
 	}
 }
 
@@ -1090,6 +1109,7 @@ bool KScope::slotCloseProject()
 	// Remove any remaining status bar messages
 	statusBar()->showMessage("");
 
+	m_bRebuildDB = true;
 	return true;
 }
 
@@ -1174,8 +1194,8 @@ void KScope::slotCscopeVerified(bool bResult, uint nArgs)
 
 	// Build the database, if required
 	if (m_bRebuildDB) {
-		m_bRebuildDB = false;
 		slotRebuildDB();
+		m_bRebuildDB = false;
 	}
 }
 
@@ -1370,6 +1390,86 @@ EditorPage* KScope::createEditorPage()
 		pPage->setTabWidth(pProj->getTabWidth());
 
 	return pPage;
+}
+
+bool KScope::dbShouldBeRebuilt(ProjectBase *pProj)
+{
+	QString dbPath = pProj->getPath() + "/cscope.out";
+	QFile db(dbPath);
+
+	if (! db.open(QIODevice::ReadOnly)) {
+		qDebug() << QString("%1: Open of \"%2\" failed")
+			.arg(__PRETTY_FUNCTION__).arg(dbPath);
+		return false;
+	}
+
+	char buf[256];
+
+	if (db.readLine(buf, sizeof(buf) - 1) <= 0) {
+		qDebug() << QString("%1: Cannot read header from %2")
+			.arg(__PRETTY_FUNCTION__).arg(dbPath);
+		return false;
+	}
+ 
+	// Scan the database header to get the trailer's offset in the file.
+	// From that point skip everything up to the list of all the source files
+	// involved: i.e.
+	// - the number & the list of source directories
+	// - the number & the list of include directories
+	// Keep the number of source files but skip the size in bytes of the list
+	// And get the whole list (all header files included)
+
+	QString header = QString(buf);
+	QString srcDir = header.section(' ', 2, 2);
+	int trailerOffset = header.section(' ', 5, 5).toInt();
+
+	db.seek(trailerOffset);
+	db.readLine(buf, sizeof(buf) - 1);
+
+	// Skip list of source directories
+	for (int i = QString(buf).toInt(); i > 0; i--) {
+		db.readLine(256);
+	}
+
+	db.readLine(buf, sizeof(buf) - 1);
+
+	// Skip list of include directories
+	for (int i = QString(buf).toInt(); i > 0; i--) {
+		db.readLine(256);
+	}
+
+	// Get the number of source files
+	db.readLine(buf, sizeof(buf) - 1);
+
+	int nSrcFiles = QString(buf).toInt();
+
+	// But skip it's size (in bytes)
+	db.readLine(buf, sizeof(buf) - 1);
+
+	// Read this list
+	QStringList srcFiles = QStringList();
+
+	for (int i = 0; i < nSrcFiles; i++) {
+		srcFiles << QString(db.readLine(256)).trimmed();
+	}
+
+	QStringListIterator it(srcFiles);
+	QDateTime lastModified = QFileInfo(db).lastModified();
+
+	// `Last modified' time of each file in the list is checked against this of the
+	// database. If any file is newer, the database must be rebuilt;
+	while (it.hasNext()) {
+		QString fName = it.next();
+
+		if (! fName.startsWith('/')) {
+			fName.prepend(srcDir + "/");
+		}
+
+		if (lastModified < QFileInfo(fName).lastModified())
+			return true;
+	}
+
+	return false;
 }
 
 /**

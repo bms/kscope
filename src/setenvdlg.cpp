@@ -25,6 +25,11 @@ SetEnvDialog::SetEnvDialog(QWidget *parent, const QString& name) :
 	vbLo->addWidget(lbl);
 	vbLo->addSpacing(10);
 
+	m_pReason = new QLabel();
+	m_pReason->setAlignment(Qt::AlignHCenter);
+	vbLo->addWidget(m_pReason);
+	vbLo->addSpacing(10);
+
 	QGroupBox *grpB = new QGroupBox("INCLUDEDIRS");
 	QVBoxLayout *vbLo1 = new QVBoxLayout();
 	lbl = new QLabel(QString("Include directories setting"));

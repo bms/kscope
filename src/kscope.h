@@ -184,6 +184,7 @@ private:
 	void restoreSession();
 	void toggleQueryWindow(bool);
 	void populateFileList(ProjectBase *);
+	bool dbShouldBeRebuilt(ProjectBase *);
 
 	friend class KScopeActions;
 

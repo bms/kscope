@@ -22,6 +22,7 @@ public:
     const QString& getSourceSetting();
     void setDefaultInclude(const QString&);
     void setDefaultSource(const QString&);
+    void setReason(const QString& text) { m_pReason->setText(text); }
 
 private slots:
     void slotApplyClicked();
@@ -30,6 +31,7 @@ private:
     KLineEdit *includeEd;
     KLineEdit *sourceEd;
 
+    QLabel *m_pReason;
     QString m_sIncludeDirs;
     QString m_sSourceDirs;
 };

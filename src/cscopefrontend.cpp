@@ -152,8 +152,8 @@ void CscopeFrontend::rebuild(const QString& incDirs, const QString& srcDirs)
 		return;
 	}
 
-	// Run the database building process
-	slArgs.append("-b");
+	// Unconditionally run the database building process
+	slArgs << "-b" << "-u";
 	run(slArgs, incDirs, srcDirs);
 
 	// Initialise output parsing
