@@ -1,6 +1,15 @@
 project(kscope4)
 
-# set version
+# set required CMake version
+if(COMMAND cmake_minimum_required)
+ cmake_minimum_required(VERSION 2.8)
+endif(COMMAND cmake_minimum_required)
+if(COMMAND cmake_policy)
+ CMAKE_POLICY(SET CMP0005 OLD)
+ CMAKE_POLICY(SET CMP0059 OLD)
+endif(COMMAND cmake_policy)
+
+# set application version
 set (KSCOPE_VERSION_MAJOR 1)
 set (KSCOPE_VERSION_MINOR 8)
 set (KSCOPE_VERSION_RELEASE 1)
